@@ -2,50 +2,42 @@ using UnityEngine;
 
 public class PlayerMovement : MonoBehaviour
 {
-    [SerializeField] private float _maxForwardSpeed;
-    [SerializeField] private float _maxBackwardSpeed;
-    [SerializeField] private float _maxStrafeSpeed;
-    [SerializeField] private float _maxLookUpAngle;
-    [SerializeField] private float _maxLookDownAngle;
+    [SerializeField] private float _maxForwardSpeed;    // Speed moving forward
+    [SerializeField] private float _maxBackwardSpeed;   // Speed moving backward
+    [SerializeField] private float _maxStrafeSpeed;     // Speed strafing left/right
+    [SerializeField] private float _maxLookUpAngle;     // Max angle for looking up
+    [SerializeField] private float _maxLookDownAngle;   // Max angle for looking down
 
-    private CharacterController _controller;
-    private Transform           _head;
-    private Vector3             _headRotation;
-    private Vector3             _velocity;
-    private Vector3             _motion;
+    private CharacterController _controller;            // Handles player movement
+    private Transform _head;                            // Reference to camera (head)
+    private Vector3 _headRotation;                      // Tracks camera rotation
+    private Vector3 _velocity;                          // Player movement speed
+    private Vector3 _motion;                            // Final motion applied
 
     void Start()
     {
         _controller = GetComponent<CharacterController>();
-        _head       = GetComponentInChildren<Camera>().transform;
-
-        HideCursor();
-    }
-
-    private void HideCursor()
-    {
-        Cursor.lockState = CursorLockMode.Locked;
+        _head = GetComponentInChildren<Camera>().transform;
+        Cursor.lockState = CursorLockMode.Locked;       // Lock the cursor to the screen
     }
 
     void Update()
     {
-        UpdateRotation();
-        UpdateHead();
+        UpdateRotation();    // Player rotation
+        UpdateHead();        // Camera (head) rotation
     }
 
     private void UpdateRotation()
     {
-        float rotation = Input.GetAxis("Mouse X");
-
-        transform.Rotate(0f, rotation, 0f);
+        transform.Rotate(0f, Input.GetAxis("Mouse X"), 0f);
     }
 
     private void UpdateHead()
     {
         _headRotation = _head.localEulerAngles;
-        
         _headRotation.x -= Input.GetAxis("Mouse Y");
 
+        // Clamp the camera's up/down angles
         if (_headRotation.x > 180f)
             _headRotation.x = Mathf.Max(_maxLookUpAngle, _headRotation.x);
         else
@@ -56,31 +48,31 @@ public class PlayerMovement : MonoBehaviour
 
     void FixedUpdate()
     {
-        UpdateVelocity();
-        UpdatePosition();
+        UpdateVelocity();    // Calculate movement
+        UpdatePosition();    // Apply movement
     }
 
     private void UpdateVelocity()
     {
-        float forwardAxis   = Input.GetAxis("Forward");
-        float strafeAxis    = Input.GetAxis("Strafe");
+        // Movement input and speed calculations
+        float forwardAxis = Input.GetAxis("Vertical");
+        float strafeAxis = Input.GetAxis("Horizontal");
 
-        if (forwardAxis >= 0f)
-            _velocity.z = forwardAxis * _maxForwardSpeed;
-        else
-            _velocity.z = forwardAxis * _maxBackwardSpeed;
+        _velocity.z = forwardAxis >= 0f 
+                      ? forwardAxis * _maxForwardSpeed 
+                      : forwardAxis * _maxBackwardSpeed;
 
         _velocity.x = strafeAxis * _maxStrafeSpeed;
 
+        // Cap movement speed
         if (_velocity.magnitude > _maxForwardSpeed)
-            _velocity = _velocity.normalized * (forwardAxis > 0 ? _maxForwardSpeed : _maxBackwardSpeed);
+            _velocity = _velocity.normalized * _maxForwardSpeed;
     }
 
     private void UpdatePosition()
     {
         _motion = transform.TransformVector(_velocity * Time.fixedDeltaTime);
-
         _controller.Move(_motion);
     }
-
 }
+
